@@ -1,6 +1,32 @@
+const WEAPON_TYPE_NONE = 0
+const WEAPON_TYPE_MELEE = 1
+const WEAPON_TYPE_RANGED = 2
+
 class Rules {
     rand () {
         return Math.random()
+    }
+
+    clamp (x, n1, n2) {
+        const nMin = Math.min(n1, n2)
+        const nMax = Math.max(n1, n2)
+        return Math.min(nMax, Math.max(nMin, x))
+    }
+
+    getWeaponType (atk) {
+        if (!atk.equipment.weapon) {
+            return WEAPON_TYPE_NONE
+        }
+        switch (atk.equipment.weapon.type) {
+            case 'weapon/melee': {
+                return WEAPON_TYPE_MELEE
+            }
+
+            case 'weapon/ranged': {
+                return WEAPON_TYPE_RANGED
+            }
+        }
+        throw new Error('invalid weapon type')
     }
 
     hits (atk, def) {
@@ -11,15 +37,31 @@ class Rules {
     }
 
     getBaseAtkMeleePower (atk) {
-       return (atk.attributes.power * 12 + atk.weapon.attributes.power * 5) * atk.attributes.effectiveness / 18
+       return (atk.attributes.power * 12 + atk.equipment.weapon.attributes.power * 5) * atk.attributes.effectiveness / 18
     }
 
     getBaseAtkRangedPower (atk) {
-        return (atk.attributes.hit * 8 + atk.weapon.attributes.power * 8) * atk.attributes.effectiveness / 18
+        return (atk.attributes.hit * 8 + atk.equipment.weapon.attributes.power * 8) * atk.attributes.effectiveness / 18
     }
 
-    getBaseAtkLevelPower (atk) {
+    getBaseAtkLeveledPower (atk) {
         return (atk.attributes.power * 16 + atk.attributes.level * atk.attributes.level / 5) * atk.attributes.effectiveness / 20
+    }
+
+    getBaseAtkPower (atk) {
+        switch (this.getWeaponType(atk)) {
+            case WEAPON_TYPE_NONE: {
+                return this.getBaseAtkLeveledPower(atk)
+            }
+
+            case WEAPON_TYPE_MELEE: {
+                return this.getBaseAtkMeleePower(atk)
+            }
+
+            case WEAPON_TYPE_RANGED: {
+                return this.getBaseAtkRangedPower(atk)
+            }
+        }
     }
 
     getRandomMeleeVariationRange (atk) {
@@ -43,19 +85,19 @@ class Rules {
     }
 
     getRandomVariationRange (atk) {
-        if (!atk.weapon) {
-            return this.getRandomLeveledVariationRange(atk)
-        }
-        switch (atk.weapon.type) {
-            case 'weapon/melee': {
+        switch (this.getWeaponType(atk)) {
+            case WEAPON_TYPE_NONE: {
+                return this.getRandomLeveledVariationRange(atk)
+            }
+
+            case WEAPON_TYPE_MELEE: {
                 return this.getRandomMeleeVariationRange(atk)
             }
 
-            case 'weapon/ranged': {
+            case WEAPON_TYPE_RANGED: {
                 return this.getRandomRangedVariationRange(atk)
             }
         }
-        throw new Error('unknown weapon type')
     }
 
     getSemiFinalDamage (base, atk, def) {
@@ -66,16 +108,36 @@ class Rules {
         )
     }
 
-    getCriticalHit (damage, atk) {
+    isCriticalHit (atk) {
         const r = this.rand()
-        if (atk.weapon) {
-            return r < (atk.weapon.attributes.critRate / 100)
-                ? damage * atk.weapon.attributes.critMult
-                : damage
+        if (atk.equipment.weapon) {
+            return r < (atk.equipment.weapon.attributes.critRate / 100)
         } else {
             return r < (5 / 100)
-                ? damage * 2
-                : damage
+        }
+    }
+
+    modifyCriticalDamage (damage, atk) {
+        return atk.equipment.weapon
+            ? damage * atk.equipment.weapon.attributes.critMult
+            : damage
+    }
+
+    doAttack (atk, def) {
+        if (this.hits(atk, def)) {
+            const nBase = this.getBaseAtkPower(atk)
+            const nEnhBase = this.getEnhancedBase(nBase, atk)
+            const nSFDamage = this.getSemiFinalDamage(nEnhBase, atk, def)
+            const bCrit = this.isCriticalHit()
+            const nFinalDamage = bCrit ? this.modifyCriticalDamage(nSFDamage, atk) : nSFDamage
+            const nClampedDamage = Math.floor(this.clamp(nFinalDamage, 1, Infinity))
+            return {
+                hit: true,
+                critical: bCrit,
+                damage: nClampedDamage
+            }
         }
     }
 }
+
+module.exports = Rules

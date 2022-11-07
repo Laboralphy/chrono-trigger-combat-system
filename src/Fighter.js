@@ -2,25 +2,24 @@ class Fighter {
     constructor () {
         this._attributes = {
             power: 1,
-            evade: 1,
             defense: 1,
             hit: 1,
-            effectiveness: 6
+            evade: 1,
+            effectiveness: 6,
+            level: 1
         }
         /**
-         * @type {Item}
+         * @type {Object.<string, Item>}
          * @private
          */
-        this._weapon = null
-
+        this._equipment = {
+            weapon: null,
+            armor: null
+        }
     }
 
-    get weapon () {
-        return this._weapon
-    }
-
-    set weapon (w) {
-        this._weapon = w
+    get equipment () {
+        return this._equipment
     }
 
     get attributes () {

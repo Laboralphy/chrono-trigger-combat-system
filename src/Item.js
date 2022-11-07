@@ -1,12 +1,14 @@
 class Item {
-    constructor () {
+    constructor (blueprint) {
         this._attributes = {
             power: 0,
             defense: 0,
             critRate: 5,
-            critMult: 2
+            critMult: 2,
+            ...blueprint.attributes
         }
-        this._type = 'weapon/melee'
+        this._effects = blueprint.effects
+        this._type = blueprint.type
     }
 
     get attributes () {
@@ -15,6 +17,10 @@ class Item {
 
     get type () {
         return this._type
+    }
+
+    get effects () {
+        return this._effects
     }
 }
 
