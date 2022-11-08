@@ -3,6 +3,7 @@ class Fighter {
         this._attributes = {
             power: 1,
             defense: 1,
+            mdef: 1,
             hit: 1,
             evade: 1,
             effectiveness: 6,

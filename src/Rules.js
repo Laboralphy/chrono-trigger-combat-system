@@ -37,15 +37,15 @@ class Rules {
     }
 
     getBaseAtkMeleePower (atk) {
-       return (atk.attributes.power * 12 + atk.equipment.weapon.attributes.power * 5) * atk.attributes.effectiveness / 18
+       return atk.attributes.power * 4 / 3 + atk.equipment.weapon.attributes.power * 5 / 9
     }
 
     getBaseAtkRangedPower (atk) {
-        return (atk.attributes.hit * 8 + atk.equipment.weapon.attributes.power * 8) * atk.attributes.effectiveness / 18
+        return atk.attributes.hit  * 2 / 3 + atk.equipment.weapon.attributes.power * 2 / 3
     }
 
     getBaseAtkLeveledPower (atk) {
-        return (atk.attributes.power * 16 + atk.attributes.level * atk.attributes.level / 5) * atk.attributes.effectiveness / 20
+        return atk.attributes.power * 1.75 + atk.attributes.level * atk.attributes.level / 45.5
     }
 
     getBaseAtkPower (atk) {
@@ -100,11 +100,19 @@ class Rules {
         }
     }
 
-    getSemiFinalDamage (base, atk, def) {
+    getPhysicalDamageReduction (damage, def) {
+        return damage * (256 - def.attributes.defense) / 256
+    }
+
+    getMagicalDamageReduction (damage, def) {
+        return damage * (102.4 - def.attributes.mdef) / 128
+    }
+
+    getBaseDamage (base, atk) {
         const range = this.getRandomVariationRange(atk)
         return Math.max(
             1,
-            base * this.getDefenseMultiplier(def) / 256 + Math.min(255, this.rand() * range)
+            base * Math.min(255, this.rand() * range)
         )
     }
 
@@ -127,7 +135,7 @@ class Rules {
         if (this.hits(atk, def)) {
             const nBase = this.getBaseAtkPower(atk)
             const nEnhBase = this.getEnhancedBase(nBase, atk)
-            const nSFDamage = this.getSemiFinalDamage(nEnhBase, atk, def)
+            const nSFDamage = this.getBaseDamage(nEnhBase, atk, def)
             const bCrit = this.isCriticalHit()
             const nFinalDamage = bCrit ? this.modifyCriticalDamage(nSFDamage, atk) : nSFDamage
             const nClampedDamage = Math.floor(this.clamp(nFinalDamage, 1, Infinity))
